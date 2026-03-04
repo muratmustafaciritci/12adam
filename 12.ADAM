@@ -1,0 +1,426 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║     ██████╗  ██╗      █████╗ ██████╗  █████╗ ███╗   ███╗                     ║
+║     ██╔══██╗ ██║     ██╔══██╗██╔══██╗██╔══██╗████╗ ████║                     ║
+║     ██████╔╝ ██║     ███████║██║  ██║███████║██╔████╔██║                     ║
+║     ██╔══██╗ ██║     ██╔══██║██║  ██║██╔══██║██║╚██╔╝██║                     ║
+║     ██████╔╝ ███████╗██║  ██║██████╔╝██║  ██║██║ ╚═╝ ██║                     ║
+║     ╚═════╝  ╚══════╝╚═╝  ╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝     ╚═╝                     ║
+║                                                                              ║
+║           TÜRKİYE & ULUSLARARASI FUTBOL TAHMİN SİSTEMİ                       ║
+║                        v1.0.0                                                ║
+║                                                                              ║
+║     Geliştirici: Murat Mustafa Ciritçi                                       ║
+║     Web: https://www.muratciritci.com.tr                                     ║
+║     E-posta: murat@muratciritci.com.tr                                       ║
+║     © 2024 Tüm Hakları Saklıdır                                              ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+PROJE ADI: 12-adam
+AMACI: 7/24 çalışan, yapay zeka destekli futbol maç tahmin ve bahis analiz sistemi
+
+═══════════════════════════════════════════════════════════════════════════════
+DESTEKLENEN LİGLER (9 ADET)
+═══════════════════════════════════════════════════════════════════════════════
+
+Kod    | Lig Adı                  | Ülke       | Seviye
+-------|--------------------------|------------|--------
+TSL    | Süper Lig                | Türkiye    | 1
+T1     | 1. Lig                   | Türkiye    | 2  
+T2     | 2. Lig                   | Türkiye    | 3
+ISA    | Serie A                  | İtalya     | 1
+ESP    | La Liga                  | İspanya    | 1
+GER    | Bundesliga               | Almanya    | 1
+FRA    | Ligue 1                  | Fransa     | 1
+BRA    | Brasileirão              | Brezilya   | 1
+WC     | Dünya Kupası             | Uluslararası| Turnuva
+
+═══════════════════════════════════════════════════════════════════════════════
+KULLANILACAK API SERVİSLERİ (ÜCRETSİZ TİER)
+═══════════════════════════════════════════════════════════════════════════════
+
+1. API-FOOTBALL (api-football.com)
+   - Limit: 100 istek/gün
+   - Kullanım: Canlı skorlar, takım istatistikleri, oyuncu verileri
+   
+2. FOOTBALL-DATA.ORG (football-data.org)
+   - Limit: 10 istek/dakika
+   - Kullanım: Tarihsel maç sonuçları, puan durumları
+   
+3. OPENWEATHERMAP (openweathermap.org)
+   - Limit: 1000 istek/gün
+   - Kullanım: Maç günü hava durumu
+   
+4. OPENLIGADB (openligadb.de)
+   - Limit: Limitsiz
+   - Kullanım: Yedek veri kaynağı
+   
+5. SPORTMONKS (sportmonks.com)
+   - Limit: 180 istek/saat
+   - Kullanım: Ek istatistikler, detaylı oyuncu verileri
+
+═══════════════════════════════════════════════════════════════════════════════
+PROJE YAPISI (KLASÖR HİYERARŞİSİ)
+═══════════════════════════════════════════════════════════════════════════════
+
+12-adam/
+├── README.md                           # Proje dokümantasyonu
+├── LICENSE                             # Özel mülkiyet lisansı
+├── requirements.txt                    # Python bağımlılıkları
+├── Dockerfile                          # Docker konteyner tanımı
+├── docker-compose.yml                  # Çoklu servis yapılandırması
+├── .env.example                        # Çevre değişkenleri şablonu
+├── .gitignore                          # Git ignore kuralları
+├── setup.py                            # Kurulum scripti
+│
+├── config/                             # Yapılandırma dosyaları
+│   ├── __init__.py
+│   ├── settings.py                     # Ana ayarlar
+│   └── api_keys.py                     # API anahtarları (güvenli)
+│
+├── core/                               # Çekirdek sistem
+│   ├── __init__.py
+│   ├── license_manager.py              # Lisans ve telif yönetimi
+│   └── constants.py                    # Sabit değerler
+│
+├── data/                               # Veri yönetimi
+│   ├── __init__.py
+│   ├── collectors/                     # API veri toplayıcılar
+│   │   ├── __init__.py
+│   │   ├── api_football.py
+│   │   ├── football_data.py
+│   │   ├── weather_api.py
+│   │   └── cache_manager.py            # Redis önbellek
+│   ├── processors/                     # Veri işleme
+│   │   ├── __init__.py
+│   │   ├── data_cleaner.py
+│   │   └── feature_engineering.py      # Özellik mühendisliği
+│   └── database/                       # Veritabanı
+│       ├── __init__.py
+│       ├── connection.py               # PostgreSQL bağlantısı
+│       ├── models.py                   # ORM modelleri
+│       └── migrations/                 # Veritabanı göçleri
+│
+├── models/                             # Yapay zeka modelleri
+│   ├── __init__.py
+│   ├── ml/                             # Makine öğrenimi
+│   │   ├── __init__.py
+│   │   ├── random_forest.py
+│   │   ├── gradient_boosting.py
+│   │   ├── logistic_regression.py
+│   │   ├── lstm_network.py             # Derin öğrenme
+│   │   └── xgboost_model.py
+│   ├── statistical/                    # İstatistiksel modeller
+│   │   ├── __init__.py
+│   │   ├── poisson_distribution.py     # Gol dağılımı
+│   │   └── elo_rating.py               # Elo puanlama
+│   └── ensemble/                       # Birleşik model
+│       ├── __init__.py
+│       └── ensemble_predictor.py       # Ana tahmin motoru
+│
+├── predictions/                        # Tahmin motorları
+│   ├── __init__.py
+│   ├── match_predictor.py              # Maç sonucu tahmini
+│   ├── score_predictor.py              # Skor tahmini
+│   ├── player_predictor.py             # Oyuncu performansı
+│   └── simulation/
+│       ├── __init__.py
+│       └── monte_carlo.py              # Monte Carlo simülasyonu
+│
+├── betting/                            # Bahis analizleri
+│   ├── __init__.py
+│   ├── value_bet.py                    # Değer bahis tespiti
+│   ├── arbitrage.py                    # Arbitraj fırsatları
+│   ├── kelly_criterion.py              # Kelly kriteri
+│   ├── bankroll_manager.py             # Bütçe yönetimi
+│   └── coupon_generator.py             # Kupon oluşturucu
+│
+├── analysis/                           # Detaylı analizler
+│   ├── __init__.py
+│   ├── team_analyzer.py                # Takım analizi
+│   ├── form_analyzer.py                # Form durumu
+│   ├── weather_impact.py               # Hava durumu etkisi
+│   └── referee_analyzer.py             # Hakem analizi
+│
+├── notifications/                      # Bildirim sistemleri
+│   ├── __init__.py
+│   ├── telegram_bot.py                 # Telegram entegrasyonu
+│   ├── email_sender.py                 # E-posta bildirimleri
+│   └── push_notifier.py                # Web push bildirimleri
+│
+├── interface/                          # Kullanıcı arayüzleri
+│   ├── __init__.py
+│   ├── console_ui.py                   # Konsol uygulaması
+│   └── web_app.py                      # Streamlit web arayüzü
+│
+├── scheduler/                          # Zamanlayıcı ve arka plan
+│   ├── __init__.py
+│   ├── task_scheduler.py               # Celery zamanlayıcı
+│   ├── background_worker.py            # Arka plan işçisi
+│   └── jobs/                           # Periyodik görevler
+│       ├── __init__.py
+│       ├── data_sync.py                # Veri senkronizasyonu (5dk)
+│       ├── live_watcher.py             # Canlı maç izleyici (60sn)
+│       ├── opportunity_hunter.py       # Fırsat avcısı (15dk)
+│       └── model_updater.py            # Model güncelleme (6sa)
+│
+├── utils/                              # Yardımcı araçlar
+│   ├── __init__.py
+│   ├── logger.py                       # Loglama sistemi
+│   ├── validators.py                   # Veri doğrulama
+│   └── helpers.py                      # Genel yardımcılar
+│
+├── tests/                              # Test dosyaları
+│   ├── __init__.py
+│   ├── test_models.py
+│   ├── test_predictions.py
+│   └── test_betting.py
+│
+├── docs/                               # Dokümantasyon
+│   ├── installation.md
+│   ├── usage.md
+│   ├── api_reference.md
+│   └── betting_guide.md
+│
+└── scripts/                            # Shell scriptleri
+    ├── install.sh                      # Kurulum scripti
+    ├── run.sh                          # Çalıştırma scripti
+    └── deploy.sh                       # Dağıtım scripti
+
+═══════════════════════════════════════════════════════════════════════════════
+TEKNOLOJİ YIĞINI (TECH STACK)
+═══════════════════════════════════════════════════════════════════════════════
+
+Programlama Dili:     Python 3.11+
+Web Framework:        FastAPI (API), Streamlit (Web UI)
+Veritabanı:           PostgreSQL 15
+Önbellek:             Redis 7
+Görev Kuyruğu:        Celery + Redis
+ML Kütüphaneleri:     scikit-learn, XGBoost, TensorFlow/Keras
+İstatistik:           NumPy, SciPy, Pandas
+HTTP İstemci:         aiohttp (asenkron)
+Bot Framework:        python-telegram-bot
+Zamanlama:            APScheduler
+Loglama:              Loguru
+Konfigürasyon:        Pydantic Settings
+Test:                 pytest
+Konteyner:            Docker + Docker Compose
+
+═══════════════════════════════════════════════════════════════════════════════
+ÖZELLİKLER (DETAYLI)
+═══════════════════════════════════════════════════════════════════════════════
+
+[YAPAY ZEKA MODELLERİ]
+✓ Random Forest Classifier (Ağırlık: %30)
+✓ Gradient Boosting Regressor (Ağırlık: %30)
+✓ Logistic Regression (Ağırlık: %20)
+✓ Poisson Dağılımı (Ağırlık: %20)
+✓ LSTM Neural Network (Form trendi)
+✓ XGBoost (Ensemble güçlendirme)
+✓ Ensemble Predictor (Birleşik model)
+
+[TAHMIN TİPLERİ]
+✓ Maç Sonucu (1/X/2)
+✓ Kesin Skor (2-1, 1-0 vb.)
+✓ Alt/Üst 2.5 Gol
+✓ Karşılıklı Gol (KG Var/Yok)
+✓ İlk Yarı / Maç Sonu (İY/MS)
+✓ Handikaplı Tahminler
+✓ Çifte Şans
+✓ Dakika Dağılımı (6 dilim: 1-15, 16-30, 31-45, 46-60, 61-75, 76-90)
+✓ Gol Atan Oyuncu Tahmini
+✓ Muhtemel İlk 11
+✓ Korner Sayısı Tahmini
+✓ Sarı Kart Tahmini
+
+[MONTE CARLO SİMÜLASYONU]
+✓ 1.000 - 100.000 iterasyon arası ayarlanabilir
+✓ Poisson dağılımı ile gol simülasyonu
+✓ Maç içi olay simülasyonu (kart, değişiklik)
+✓ En sık görülen skor analizi
+✓ Kazanma olasılığı hesaplama
+
+[BAHİS ANALİZLERİ]
+✓ Value Bet Tespiti (Value = (Gerçek Olasılık × Oran) - 1)
+✓ Arbitraj Fırsatı Hesaplama (3+ site karşılaştırma)
+✓ Kelly Kriteri (f* = (bp - q) / b)
+✓ Banka Yönetimi (Konservatif/Yarım/Tam Kelly)
+✓ Otomatik Kupon Oluşturma
+✓ Kombine Önerileri (2-3-4 maç)
+✓ Banko Maç Tespiti
+✓ Sürpriz Maç Tespiti
+✓ Sistem Kuponları (2/3, 2/4, Lucky 15)
+
+[CANLI BAHİS ÖZELLİKLERİ]
+✓ Anlık Oran Takibi (30 saniyede bir)
+✓ Momentum Analizi (Baskı/baskı altında)
+✓ Canlı xG (Expected Goals) Hesaplama
+✓ Tahmin Güncelleme (Her golde)
+✓ Oran Düşüşü Alarmı
+
+[EK FAKTÖRLER]
+✓ Hava Durumu Etkisi (Sıcaklık, yağmur, rüzgar, nem)
+✓ Hakem İstatistikleri (Kart, penaltı eğilimi)
+✓ Sakat/Cezalı Oyuncu Takibi
+✓ Fikstür Yoğunluğu Analizi
+✓ Derbi Motivasyonu
+✓ Transfer Etkisi Değerlendirmesi
+
+[BİLDİRİM SİSTEMLERİ]
+✓ Telegram Bot (@onikinciadam_bot)
+  - /tahmin komutu
+  - /canli komutu
+  - /form [takım] komutu
+  - /deger komutu
+  - Maç öncesi bildirimler
+  - Canlı gol bildirimleri
+  - Value bet uyarıları
+  - Günlük özet rapor
+✓ E-posta Bildirimleri
+✓ Web Push Bildirimleri
+
+[ARKA PLAN MOTORU (7/24 ÇALIŞAN)]
+✓ Veri Senkronizasyonu (Her 5 dakika)
+✓ Canlı Maç İzleyici (Her 60 saniye)
+✓ Fırsat Avcısı (Her 15 dakika - Value + Arbitraj)
+✓ ML Model Güncelleme (Her 6 saat)
+✓ Günlük Rapor Üretimi (Her gece 00:00)
+
+[RAPORLAMA]
+✓ Tahmin Doğruluk Oranı Takibi
+✓ ROI (Return on Investment) Hesaplama
+✓ Hit Rate İstatistiği
+✓ En Başarılı Ligler Analizi
+✓ En Başarılı Bahis Tipleri
+✓ PDF Rapor Dışa Aktarma
+✓ Excel/CSV Dışa Aktarma
+✓ JSON API Çıktısı
+
+[GÜVENLİK & KORUMA]
+✓ Geliştirici: Murat Mustafa Ciritçi
+✓ Web: www.muratciritci.com.tr
+✓ Donanım ID ile Lisanslama
+✓ Dijital İmza ile Bütünlük Kontrolü
+✓ Cython ile Kritik Algoritmaları Derleme (.so/.pyd)
+✓ Kod Obfuscation (Karakteristik karıştırma)
+✓ Watermark (Her çıktıda geliştirici bilgisi)
+
+[KULLANIM PLATFORMALARI]
+✓ Konsol Uygulaması (Bilgisayar - Terminal)
+✓ Web Arayüzü (Streamlit Cloud - Her cihazdan tarayıcı)
+✓ Telegram Bot (Mobil - iOS/Android)
+✓ Docker Container (Her ortamda çalıştırma)
+
+═══════════════════════════════════════════════════════════════════════════════
+KURULUM GEREKSİNİMLERİ
+═══════════════════════════════════════════════════════════════════════════════
+
+Donanım:
+- CPU: 2+ çekirdek (4+ önerilir)
+- RAM: 4GB minimum (8GB önerilir)
+- Disk: 10GB boş alan
+- İnternet: Sürekli bağlantı (API erişimi için)
+
+Yazılım:
+- Python 3.11 veya üzeri
+- PostgreSQL 15
+- Redis 7
+- Docker (isteğe bağlı)
+
+Hesaplar:
+- API-Football ücretsiz hesap
+- Football-Data.org ücretsiz hesap
+- OpenWeatherMap ücretsiz hesap
+- Telegram Bot Token (BotFather'dan alınacak)
+
+═══════════════════════════════════════════════════════════════════════════════
+ÇEVRE DEĞİŞKENLERİ (.env dosyası)
+═══════════════════════════════════════════════════════════════════════════════
+
+# API Anahtarları
+API_FOOTBALL_KEY=your_api_football_key_here
+FOOTBALL_DATA_KEY=your_football_data_key_here
+OPENWEATHER_KEY=your_openweather_key_here
+
+# Telegram
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHAT_ID=your_chat_id
+
+# Veritabanı
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=football_predictor
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# Sistem
+DEBUG=false
+LOG_LEVEL=INFO
+TIMEZONE=Europe/Istanbul
+
+═══════════════════════════════════════════════════════════════════════════════
+BAŞLANGIÇ KOMUTLARI
+═══════════════════════════════════════════════════════════════════════════════
+
+# 1. Klonlama
+git clone https://github.com/kullanici/12-adam.git
+cd 12-adam
+
+# 2. Sanal ortam oluşturma
+python -m venv venv
+source venv/bin/activate  # Linux/Mac
+venv\Scripts\activate     # Windows
+
+# 3. Bağımlılıkları yükleme
+pip install -r requirements.txt
+
+# 4. Veritabanı kurulumu
+python scripts/setup_db.py
+
+# 5. Çevre değişkenlerini ayarlama
+cp .env.example .env
+# .env dosyasını düzenle
+
+# 6. Çalıştırma (Konsol)
+python main.py
+
+# 7. Çalıştırma (Web)
+streamlit run web_app.py
+
+# 8. Çalıştırma (Telegram Bot)
+python bot.py
+
+# VEYA Docker ile:
+docker-compose up -d
+
+═══════════════════════════════════════════════════════════════════════════════
+GELİŞTİRİCİ BİLGİLERİ
+═══════════════════════════════════════════════════════════════════════════════
+
+Ad Soyad:    Murat Mustafa Ciritçi
+Web Sitesi:  https://www.muratciritci.com.tr
+E-posta:     murat@muratciritci.com.tr
+LinkedIn:    linkedin.com/in/muratciritci
+GitHub:      github.com/muratciritci
+Twitter/X:   @muratciritci
+
+Telif Hakkı: © 2024 Murat Mustafa Ciritçi. Tüm Hakları Saklıdır.
+Lisans:      Proprietary (Özel Mülkiyet)
+Versiyon:    1.0.0
+Durum:       Production
+
+═══════════════════════════════════════════════════════════════════════════════
+YASAL UYARI
+═══════════════════════════════════════════════════════════════════════════════
+
+Bu yazılım eğitim ve araştırma amaçlıdır. Bahis yapmak finansal risk içerir.
+Yazılımın ürettiği tahminler garanti değildir. Kayıplardan geliştirici
+sorumlu değildir. Lütfen sorumlu oynayın ve yerel yasalara uygun hareket edin.
+
+═══════════════════════════════════════════════════════════════════════════════
+                            SON
+═══════════════════════════════════════════════════════════════════════════════
