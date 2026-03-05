@@ -314,7 +314,7 @@ def main_app():
 import time
 
 def generate_mock_matches(lig):
-    """Mock maç verisi üret"""
+    """Mock maç verisi üret - Mart 2026 sonrası"""
     takimlar = {
         "Süper Lig 2025-2026": ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
         "1. Lig 2025-2026": ["Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
@@ -325,11 +325,16 @@ def generate_mock_matches(lig):
     maclar = []
     
     for i in range(0, len(secili_takimlar)-1, 2):
+        # Mart 2026'dan Aralık 2026'ya kadar
+        ay = random.randint(3, 12)  # Mart=3, Aralık=12
+        gun = random.randint(1, 28)
+        saat = random.randint(13, 21)
+        
         maclar.append({
             "Ev Sahibi": secili_takimlar[i],
             "Deplasman": secili_takimlar[i+1],
-            "Tarih": (datetime.now() + timedelta(days=random.randint(0, 7))).strftime("%d.%m.%Y"),
-            "Saat": f"{random.randint(13, 21)}:00",
+            "Tarih": f"{gun:02d}.{ay:02d}.2026",
+            "Saat": f"{saat}:00",
             "Lig": lig
         })
     
