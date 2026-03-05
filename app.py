@@ -9,12 +9,12 @@ from datetime import datetime, timedelta
 
 sys.path.append('.')
 
-# API Client - BUNLARI EKLE
-from api_client import APIFootballClient, LEAGUE_IDS
+# Football Data Client (football-data.org)
+from football_data_client import FootballDataClient, COMPETITIONS
 
-# API Client oluştur
-api_key = os.getenv("API_FOOTBALL_KEY", "e9394f65e9da5b06527a4987ad240d7b")
-api_client = APIFootballClient(api_key)
+# Client oluştur
+football_data_key = os.getenv("FOOTBALL_DATA_KEY", "42a70b8d9de542d7a74c3b4b8e8c59c1")
+football_client = FootballDataClient(football_data_key)
 
 # Sayfa yapılandırması
 st.set_page_config(
@@ -56,8 +56,8 @@ if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'admin_user' not in st.session_state:
     st.session_state.admin_user = None
-if 'favori' not in st.session_state:  # YENİ
-    st.session_state.favori = "Tümü"   # YENİ
+if 'favori' not in st.session_state:
+    st.session_state.favori = "Tümü"
 
 # ==================== GİRİŞ SAYFASI ====================
 def login_page():
@@ -74,11 +74,8 @@ def login_page():
         password = st.text_input("Şifre", type="password")
         
         if st.button("Giriş Yap", type="primary", use_container_width=True):
-            # Hash kontrolü
             import hashlib
             password_hash = hashlib.sha256(password.encode()).hexdigest()
-            
-            # Yeni hash
             correct_hash = "7d85a3c65095fef30f8b4a9b16a7d1393c2909f6e5d73cd4238990caf475a00a"
             
             if username == "admin" and password_hash == correct_hash:
@@ -98,27 +95,25 @@ def main_app():
     with st.sidebar:
         st.markdown("## ⚙️ Ayarlar")
         
-        # Çalışma Modu
-        mod = st.selectbox(
-            "Çalışma Modu",
-            ["Otomatik (API → Mock)", "API Modu (Gerçek Veri)", "Mock Modu (Simülasyon)"],
-            help="API için anahtar gerekli. Otomatik modda API çalışmazsa Mock'a geçer."
-        )
-        
-        # Lig Seçimi
+        # Lig Seçimi (Avrupa)
         lig = st.selectbox(
             "Lig Seçin",
-            ["Süper Lig 2023-2024", "1. Lig 2023-2024", "2. Lig 2023-2024"]
+            ["Premier League 2024-2025", "La Liga 2024-2025", "Serie A 2024-2025", 
+             "Bundesliga 2024-2025", "Ligue 1 2024-2025", "Champions League 2024-2025"]
         )
         
-        # Favori Takım
         st.markdown("---")
+        
+        # Favori Takım (Avrupa)
         st.markdown("### ⭐ Favori Takım")
         
         favori_takimlar = {
-            "Süper Lig 2023-2024": ["Tümü", "Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
-            "1. Lig 2023-2024": ["Tümü", "Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
-            "2. Lig 2023-2024": ["Tümü", "Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
+            "Premier League 2024-2025": ["Tümü", "Man City", "Liverpool", "Arsenal", "Chelsea", "Man United", "Tottenham", "Newcastle"],
+            "La Liga 2024-2025": ["Tümü", "Real Madrid", "Barcelona", "Atletico Madrid", "Sevilla", "Valencia", "Villarreal"],
+            "Serie A 2024-2025": ["Tümü", "Juventus", "Inter", "AC Milan", "Napoli", "Roma", "Lazio", "Fiorentina"],
+            "Bundesliga 2024-2025": ["Tümü", "Bayern Munich", "Dortmund", "RB Leipzig", "Bayer Leverkusen", "Frankfurt", "Wolfsburg"],
+            "Ligue 1 2024-2025": ["Tümü", "PSG", "Marseille", "Lyon", "Monaco", "Lille", "Nice"],
+            "Champions League 2024-2025": ["Tümü", "Real Madrid", "Man City", "Bayern Munich", "PSG", "Barcelona", "Arsenal", "Inter"]
         }
         
         favori = st.selectbox(
@@ -166,7 +161,7 @@ def main_app():
     with col1:
         st.metric("Lig", lig.split()[0])
     with col2:
-        st.metric("Mod", mod.split()[0])
+        st.metric("Mod", "API")
     with col3:
         st.metric("Model", str(len(model)))
     with col4:
@@ -184,15 +179,20 @@ def main_app():
             with st.spinner("Maçlar yükleniyor..."):
                 progress_bar = st.progress(0)
                 
-                # Simülasyon maçları
-                maclar = generate_mock_matches(lig)
+                # Football Data API
+                competition_code = COMPETITIONS.get(lig, "PL")
+                maclar = football_client.get_matches(competition_code)
+                
+                # API boşsa uyarı
+                if not maclar:
+                    st.warning("API'den veri alınamadı. Limit dolmuş olabilir veya API hatası.")
                 
                 # Favori takım filtresi
-                if st.session_state.favori != "Tümü":
+                if st.session_state.favori != "Tümü" and maclar:
                     maclar = [m for m in maclar if st.session_state.favori in [m['Ev Sahibi'], m['Deplasman']]]
                     
                     if len(maclar) == 0:
-                        st.warning(f"⚠️ {st.session_state.favori} için bu hafta maç yok!")
+                        st.warning(f"⚠️ {st.session_state.favori} için maç bulunamadı!")
                     else:
                         st.success(f"✅ {st.session_state.favori} için {len(maclar)} maç bulundu")
                 
@@ -200,13 +200,13 @@ def main_app():
                     time.sleep(0.01)
                     progress_bar.progress(i + 1)
                 
-                # Maç tablosu
-                if len(maclar) > 0:
+                # Göster
+                if maclar:
                     df = pd.DataFrame(maclar)
                     st.dataframe(df, use_container_width=True, hide_index=True)
                     st.session_state.maclar = maclar
                 else:
-                    st.info("💡 Başka lig veya 'Tümü' seçeneğini deneyin")
+                    st.error("❌ Maç bulunamadı! API limiti dolmuş olabilir.")
     
     with tab2:
         st.subheader("📊 Detaylı Analiz")
@@ -315,37 +315,10 @@ def main_app():
     
     # Footer
     st.markdown("---")
-    st.caption("Geliştirici: Murat Mustafa Ciritçi | https://www.muratciritci.com.tr | v1.1.0-hybrid")
+    st.caption("Geliştirici: Murat Mustafa Ciritçi | https://www.muratciritci.com.tr | v1.2.0-Europe")
 
 # ==================== YARDIMCI FONKSİYONLAR ====================
 import time
-
-def generate_mock_matches(lig):
-    """Mock maç verisi üret - Mart 2023 sonrası"""
-    takimlar = {
-        "Süper Lig 2023-2024": ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
-        "1. Lig 2023-2024": ["Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
-        "2. Lig 2023-2024": ["Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
-    }
-    
-    secili_takimlar = takimlar.get(lig, takimlar["Süper Lig 2023-2024"])
-    maclar = []
-    
-    for i in range(0, len(secili_takimlar)-1, 2):
-        # Mart 2023'dan Aralık 2024'ya kadar
-        ay = random.randint(3, 12)  # Mart=3, Aralık=12
-        gun = random.randint(1, 28)
-        saat = random.randint(13, 21)
-        
-        maclar.append({
-            "Ev Sahibi": secili_takimlar[i],
-            "Deplasman": secili_takimlar[i+1],
-            "Tarih": f"{gun:02d}.{ay:02d}.2023",
-            "Saat": f"{saat}:00",
-            "Lig": lig
-        })
-    
-    return maclar
 
 def generate_team_stats(takim):
     """Takım istatistikleri üret"""
