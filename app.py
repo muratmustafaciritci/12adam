@@ -57,31 +57,31 @@ def login_page():
     
     col1, col2, col3 = st.columns([1, 2, 1])
     
-with col2:
-    st.markdown("---")
-    st.subheader("🔐 Admin Girişi")
-    
-    username = st.text_input("Kullanıcı Adı", value="admin")
-    password = st.text_input("Şifre", type="password")
-    
-    if st.button("Giriş Yap", type="primary", use_container_width=True):
-        # Hash kontrolü
-        import hashlib
-        password_hash = hashlib.sha256(password.encode()).hexdigest()
+    with col2:
+        st.markdown("---")
+        st.subheader("🔐 Admin Girişi")
         
-        # Yeni hash
-        correct_hash = "7d85a3c65095fef30f8b4a9b16a7d1393c2909f6e5d73cd4238990caf475a00a"
+        username = st.text_input("Kullanıcı Adı", value="admin")
+        password = st.text_input("Şifre", type="password")
         
-        if username == "admin" and password_hash == correct_hash:
-            st.session_state.logged_in = True
-            st.session_state.admin_user = username
-            st.success("✅ Giriş başarılı!")
-            st.rerun()
-        else:
-            st.error("❌ Kullanıcı adı veya şifre hatalı!")
-    
-    st.markdown("---")
-    st.info("💡 Yeni şifrenizle giriş yapın")
+        if st.button("Giriş Yap", type="primary", use_container_width=True):
+            # Hash kontrolü
+            import hashlib
+            password_hash = hashlib.sha256(password.encode()).hexdigest()
+            
+            # Yeni hash
+            correct_hash = "7d85a3c65095fef30f8b4a9b16a7d1393c2909f6e5d73cd4238990caf475a00a"
+            
+            if username == "admin" and password_hash == correct_hash:
+                st.session_state.logged_in = True
+                st.session_state.admin_user = username
+                st.success("✅ Giriş başarılı!")
+                st.rerun()
+            else:
+                st.error("❌ Kullanıcı adı veya şifre hatalı!")
+        
+        st.markdown("---")
+        st.info("💡 Yeni şifrenizle giriş yapın")
 
 # ==================== ANA UYGULAMA ====================
 def main_app():
@@ -281,7 +281,7 @@ def main_app():
     
     # Footer
     st.markdown("---")
-    st.caption("Geliştirici: Murat Mustafa Ciritçi | https://www.muratciritci.com.tr | v1.1.0-hybrid")
+    st.caption("Geliştirici: Murat Mustafa Ciritçi | https://www.muratciritci.com.tr  | v1.1.0-hybrid")
 
 # ==================== YARDIMCI FONKSİYONLAR ====================
 import time
