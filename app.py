@@ -88,42 +88,40 @@ def login_page():
 # ==================== ANA UYGULAMA ====================
 def main_app():
     # Sidebar
-    with st.sidebar:                    # ← 4 boşluk
-        st.markdown("## ⚙️ Ayarlar")     # ← 8 boşluk (4+4)
+    with st.sidebar:
+        st.markdown("## ⚙️ Ayarlar")
         
         # Çalışma Modu
-        mod = st.selectbox(              # ← 8 boşluk
-            "Çalışma Modu",              # ← 12 boşluk
+        mod = st.selectbox(
+            "Çalışma Modu",
             ["Otomatik (API → Mock)", "API Modu (Gerçek Veri)", "Mock Modu (Simülasyon)"],
             help="API için anahtar gerekli. Otomatik modda API çalışmazsa Mock'a geçer."
         )
-    
-    # Lig Seçimi
-    lig = st.selectbox(
-        "Lig Seçin",
-        ["Süper Lig 2025-2026", "1. Lig 2025-2026", "2. Lig 2025-2026"]
-    )
-    
-    # ⭐ YENİ: Favori Takım
-    st.markdown("---")
-    st.markdown("### ⭐ Favori Takım")
-    
-    favori_takimlar = {
-        "Süper Lig 2025-2026": ["Tümü", "Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
-        "1. Lig 2025-2026": ["Tümü", "Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
-        "2. Lig 2025-2026": ["Tümü", "Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
-    }
-    
-    favori = st.selectbox(
-        "Takım Filtrele",
-        favori_takimlar.get(lig, ["Tümü"]),
-        index=0
-    )
-    st.session_state.favori = favori
-    
-    st.markdown("---")
-    
-    # ... geri kalan sidebar kodları aynı ...
+        
+        # Lig Seçimi
+        lig = st.selectbox(
+            "Lig Seçin",
+            ["Süper Lig 2025-2026", "1. Lig 2025-2026", "2. Lig 2025-2026"]
+        )
+        
+        # Favori Takım
+        st.markdown("---")
+        st.markdown("### ⭐ Favori Takım")
+        
+        favori_takimlar = {
+            "Süper Lig 2025-2026": ["Tümü", "Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
+            "1. Lig 2025-2026": ["Tümü", "Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
+            "2. Lig 2025-2026": ["Tümü", "Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
+        }
+        
+        favori = st.selectbox(
+            "Takım Filtrele",
+            favori_takimlar.get(lig, ["Tümü"]),
+            index=0
+        )
+        st.session_state.favori = favori
+        
+        st.markdown("---")
         
         # ML Model Ayarları
         st.markdown("### 🤖 ML Model")
@@ -172,36 +170,36 @@ def main_app():
     # Maç Listesi ve Tahmin
     tab1, tab2, tab3 = st.tabs(["📋 Maçlar", "📊 Analiz & Grafikler", "🎯 Tahmin Sonuçları"])
     
-with tab1:
-    st.subheader("Günün Maçları")
-    
-    if st.button("🔍 Maçları Getir", type="primary"):
-        with st.spinner("Maçlar yükleniyor..."):
-            progress_bar = st.progress(0)
-            
-            # Simülasyon maçları
-            maclar = generate_mock_matches(lig)
-            
-            # ⭐ YENİ: Favori takım filtresi
-            if st.session_state.favori != "Tümü":
-                maclar = [m for m in maclar if st.session_state.favori in [m['Ev Sahibi'], m['Deplasman']]]
+    with tab1:
+        st.subheader("Günün Maçları")
+        
+        if st.button("🔍 Maçları Getir", type="primary"):
+            with st.spinner("Maçlar yükleniyor..."):
+                progress_bar = st.progress(0)
                 
-                if len(maclar) == 0:
-                    st.warning(f"⚠️ {st.session_state.favori} için bu hafta maç yok!")
+                # Simülasyon maçları
+                maclar = generate_mock_matches(lig)
+                
+                # Favori takım filtresi
+                if st.session_state.favori != "Tümü":
+                    maclar = [m for m in maclar if st.session_state.favori in [m['Ev Sahibi'], m['Deplasman']]]
+                    
+                    if len(maclar) == 0:
+                        st.warning(f"⚠️ {st.session_state.favori} için bu hafta maç yok!")
+                    else:
+                        st.success(f"✅ {st.session_state.favori} için {len(maclar)} maç bulundu")
+                
+                for i in range(100):
+                    time.sleep(0.01)
+                    progress_bar.progress(i + 1)
+                
+                # Maç tablosu
+                if len(maclar) > 0:
+                    df = pd.DataFrame(maclar)
+                    st.dataframe(df, use_container_width=True, hide_index=True)
+                    st.session_state.maclar = maclar
                 else:
-                    st.success(f"✅ {st.session_state.favori} için {len(maclar)} maç bulundu")
-            
-            for i in range(100):
-                time.sleep(0.01)
-                progress_bar.progress(i + 1)
-            
-            # Maç tablosu
-            if len(maclar) > 0:
-                df = pd.DataFrame(maclar)
-                st.dataframe(df, use_container_width=True, hide_index=True)
-                st.session_state.maclar = maclar
-            else:
-                st.info("💡 Başka lig veya 'Tümü' seçeneğini deneyin")
+                    st.info("💡 Başka lig veya 'Tümü' seçeneğini deneyin")
     
     with tab2:
         st.subheader("📊 Detaylı Analiz")
@@ -265,7 +263,7 @@ with tab1:
                         progress_bar.progress(i + 1)
                     
                     # Tahmin sonuçları
-                    for mac in st.session_state.maclar[:3]:  # İlk 3 maç
+                    for mac in st.session_state.maclar[:3]:
                         with st.container():
                             st.markdown("---")
                             cols = st.columns([2, 1, 1, 1, 1])
@@ -310,7 +308,7 @@ with tab1:
     
     # Footer
     st.markdown("---")
-    st.caption("Geliştirici: Murat Mustafa Ciritçi | https://www.muratciritci.com.tr  | v1.1.0-hybrid")
+    st.caption("Geliştirici: Murat Mustafa Ciritçi | https://www.muratciritci.com.tr | v1.1.0-hybrid")
 
 # ==================== YARDIMCI FONKSİYONLAR ====================
 import time
