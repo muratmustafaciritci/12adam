@@ -55,6 +55,12 @@ st.markdown("""
         margin: 10px 0;
         border-left: 4px solid #1f77b4;
     }
+    .date-input {
+        background-color: #f0f2f6;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 5px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -67,6 +73,10 @@ if 'favori' not in st.session_state:
     st.session_state.favori = "Tümü"
 if 'secili_mac' not in st.session_state:
     st.session_state.secili_mac = None
+if 'baslangic_tarihi' not in st.session_state:
+    st.session_state.baslangic_tarihi = None
+if 'bitis_tarihi' not in st.session_state:
+    st.session_state.bitis_tarihi = None
 
 # ==================== GİRİŞ SAYFASI ====================
 def login_page():
@@ -174,6 +184,16 @@ def real_prediction(ev_sahibi, deplasman):
         'ev_gol': ev_gol,
         'dep_gol': dep_gol
     }
+
+# ==================== TARİH FİLTRELEME FONKSİYONU ====================
+def tarih_filtrele(maclar, baslangic, bitis):
+    """Tarih aralığına göre filtrele"""
+    filtreli = []
+    for mac in maclar:
+        mac_tarih = datetime.strptime(mac['Tarih'], "%d.%m.%Y")
+        if baslangic <= mac_tarih <= bitis:
+            filtreli.append(mac)
+    return filtreli
 
 # ==================== ANA UYGULAMA ====================
 def main_app():
@@ -351,47 +371,81 @@ def main_app():
         st.subheader("🎯 ML Tahmin Sonuçları")
         
         if 'maclar' in st.session_state:
-            # Tarih filtresi
-            st.markdown("### 📅 Tarih ve Maç Seçimi")
+            # Tarih aralığı seçimi
+            st.markdown("### 📅 Tarih Aralığı Seçimi")
             
-            # Benzersiz tarihleri al ve sırala
-            tarihler = sorted(list(set([m['Tarih'] for m in st.session_state.maclar])))
-            
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
             
             with col1:
-                if st.button("📍 Bugün (05.03.2026)"):
-                    st.session_state.secili_tarih = "05.03.2026"
-                    st.session_state.secili_mac = None
+                st.markdown("**Başlangıç Tarihi**")
+                b_gun = st.number_input("Gün", min_value=1, max_value=31, value=5, key="b_gun")
+                b_ay = st.number_input("Ay", min_value=1, max_value=12, value=3, key="b_ay")
+                b_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="b_yil")
             
             with col2:
-                if st.button("📍 Yarın (06.03.2026)"):
-                    st.session_state.secili_tarih = "06.03.2026"
-                    st.session_state.secili_mac = None
+                st.markdown("**Bitiş Tarihi**")
+                bt_gun = st.number_input("Gün", min_value=1, max_value=31, value=31, key="bt_gun")
+                bt_ay = st.number_input("Ay", min_value=1, max_value=12, value=5, key="bt_ay")
+                bt_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="bt_yil")
             
-            with col3:
-                secili_tarih = st.selectbox(
-                    "Veya Tarih Seçin",
-                    ["Tümü"] + tarihler,
-                    index=0
-                )
-                if secili_tarih != "Tümü":
-                    st.session_state.secili_tarih = secili_tarih
-                    st.session_state.secili_mac = None
+            # Hızlı seçimler
+            st.markdown("**⚡ Hızlı Seçimler**")
+            hizli_col1, hizli_col2, hizli_col3, hizli_col4 = st.columns(4)
             
-            # Tarihe göre filtrele
-            if 'secili_tarih' in st.session_state and st.session_state.secili_tarih != "Tümü":
-                filtreli_maclar = [m for m in st.session_state.maclar if m['Tarih'] == st.session_state.secili_tarih]
-                st.info(f"📅 {st.session_state.secili_tarih} için {len(filtreli_maclar)} maç bulundu")
-            else:
-                filtreli_maclar = st.session_state.maclar
+            with hizli_col1:
+                if st.button("📍 Bugün"):
+                    b_gun, b_ay, b_yil = 5, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 5, 3, 2026
+            
+            with hizli_col2:
+                if st.button("📍 Yarın"):
+                    b_gun, b_ay, b_yil = 6, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 6, 3, 2026
+            
+            with hizli_col3:
+                if st.button("📍 Bu Hafta"):
+                    b_gun, b_ay, b_yil = 5, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 11, 3, 2026
+            
+            with hizli_col4:
+                if st.button("📍 Bu Ay"):
+                    b_gun, b_ay, b_yil = 1, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 31, 3, 2026
+            
+            # Tarihleri oluştur
+            try:
+                baslangic_tarihi = datetime(b_yil, b_ay, b_gun)
+                bitis_tarihi = datetime(bt_yil, bt_ay, bt_gun)
+                
+                if baslangic_tarihi > bitis_tarihi:
+                    st.error("❌ Başlangıç tarihi bitiş tarihinden sonra olamaz!")
+                else:
+                    st.session_state.baslangic_tarihi = baslangic_tarihi
+                    st.session_state.bitis_tarihi = bitis_tarihi
+                    
+                    st.success(f"📅 {baslangic_tarihi.strftime('%d.%m.%Y')} - {bitis_tarihi.strftime('%d.%m.%Y')} arası maçlar")
+                    
+                    # Tarihe göre filtrele
+                    filtreli_maclar = tarih_filtrele(st.session_state.maclar, baslangic_tarihi, bitis_tarihi)
+                    
+                    if st.session_state.favori != "Tümü":
+                        filtreli_maclar = [m for m in filtreli_maclar if st.session_state.favori in [m['Ev Sahibi'], m['Deplasman']]]
+                    
+                    st.info(f"🔍 {len(filtreli_maclar)} maç bulundu")
+            
+            except ValueError:
+                st.error("❌ Geçersiz tarih! Lütfen kontrol edin.")
+                filtreli_maclar = []
             
             # Maç seçimi
             if filtreli_maclar:
-                mac_secenekleri = [f"{m['Ev Sahibi']} vs {m['Deplasman']} - {m['Saat']}" for m in filtreli_maclar]
+                st.markdown("---")
+                st.markdown("### ⚽ Maç Seçimi")
+                
+                mac_secenekleri = [f"{m['Ev Sahibi']} vs {m['Deplasman']} - {m['Tarih']} {m['Saat']}" for m in filtreli_maclar]
                 
                 secili_mac_index = st.selectbox(
-                    "Maç Seçin",
+                    "Tahmin yapmak istediğiniz maçı seçin",
                     range(len(mac_secenekleri)),
                     format_func=lambda i: mac_secenekleri[i]
                 )
@@ -405,6 +459,7 @@ def main_app():
                 <div class="match-card">
                     <h3>⚽ {secili_mac['Ev Sahibi']} vs {secili_mac['Deplasman']}</h3>
                     <p>📅 {secili_mac['Tarih']} | 🕐 {secili_mac['Saat']} | 🏆 {secili_mac['Lig']}</p>
+                    <p>📊 Durum: {secili_mac.get('Durum', 'Bilinmiyor')}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
@@ -414,7 +469,7 @@ def main_app():
                         progress_bar = st.progress(0)
                         
                         for i in range(100):
-                            time.sleep(0.01)
+                            time.sleep(0.015)
                             progress_bar.progress(i + 1)
                         
                         # Gerçekçi tahmin
@@ -427,15 +482,16 @@ def main_app():
                         col1, col2, col3, col4 = st.columns(4)
                         
                         with col1:
-                            st.metric("Maç Sonucu", tahmin['sonuc'])
+                            renk = "🔴" if tahmin['sonuc'] == "1" else "🟡" if tahmin['sonuc'] == "X" else "🟢"
+                            st.metric("Maç Sonucu", f"{renk} {tahmin['sonuc']}")
                         
                         with col2:
                             st.metric("Skor Tahmini", tahmin['skor'])
                         
                         with col3:
-                            renk = "normal" if tahmin['guven'] < 0.7 else "inverse"
+                            guven_renk = "normal" if tahmin['guven'] < 0.7 else "inverse"
                             st.metric("Güven Skoru", f"%{int(tahmin['guven']*100)}", 
-                                    delta="Yüksek" if tahmin['guven'] > 0.7 else "Orta")
+                                    delta="Yüksek" if tahmin['guven'] > 0.7 else "Orta" if tahmin['guven'] > 0.6 else "Düşük")
                         
                         with col4:
                             st.metric("Gol Tahmini", tahmin['ust'])
@@ -447,22 +503,24 @@ def main_app():
                         col1, col2, col3 = st.columns(3)
                         
                         with col1:
-                            st.markdown("**Ev Sahibi Gücü**")
+                            st.markdown("**🏠 Ev Sahibi**")
                             st.progress(tahmin['ev_guc'] / 100)
-                            st.caption(f"{tahmin['ev_guc']}/100")
+                            st.caption(f"Güç: {tahmin['ev_guc']}/100")
                             st.caption(f"Form: {tahmin['ev_form']}")
+                            st.caption(f"Gol Olasılığı: {tahmin['ev_gol']:.1f}")
                         
                         with col2:
-                            st.markdown("**Deplasman Gücü**")
+                            st.markdown("**🏃 Deplasman**")
                             st.progress(tahmin['dep_guc'] / 100)
-                            st.caption(f"{tahmin['dep_guc']}/100")
+                            st.caption(f"Güç: {tahmin['dep_guc']}/100")
                             st.caption(f"Form: {tahmin['dep_form']}")
+                            st.caption(f"Gol Olasılığı: {tahmin['dep_gol']:.1f}")
                         
                         with col3:
-                            st.markdown("**Gol İstatistikleri**")
-                            st.caption(f"Ev Sahibi Gol: {tahmin['ev_gol']:.1f}")
-                            st.caption(f"Deplasman Gol: {tahmin['dep_gol']:.1f}")
+                            st.markdown("**📈 Diğer Tahminler**")
                             st.caption(f"KG Tahmini: {tahmin['kg']}")
+                            st.caption(f"Toplam Gol: {tahmin['ust']}")
+                            st.caption(f"Güven: %{int(tahmin['guven']*100)}")
                         
                         # Kelly Kriteri
                         st.markdown("---")
@@ -478,21 +536,23 @@ def main_app():
                                 st.success(f"✅ Kelly Önerisi: Bankroll'un %{onerilen_bahis:.1f}'i")
                             
                             with col2:
-                                st.info(f"📌 Önerilen Bahis: {tahmin['sonuc']} veya {tahmin['ust']}")
+                                st.info(f"📌 Önerilen Bahis: **{tahmin['sonuc']}** veya **{tahmin['ust']}**")
                             
                             # Risk uyarısı
                             if tahmin['guven'] < 0.65:
                                 st.warning("⚠️ Orta risk - Dikkatli olun!")
+                            elif tahmin['guven'] < 0.75:
+                                st.info("ℹ️ İyi güven - Değerlendirilebilir")
                             else:
                                 st.success("✅ Yüksek güvenli tahmin!")
                         else:
-                            st.warning("❌ Güven düşük - Bahis önerilmez!")
+                            st.error("❌ Güven düşük (%60 altı) - Bahis önerilmez!")
                         
                         # Alternatif bahisler
                         st.markdown("---")
                         st.markdown("### 🎲 Alternatif Bahisler")
                         
-                        alt_col1, alt_col2, alt_col3 = st.columns(3)
+                        alt_col1, alt_col2, alt_col3, alt_col4 = st.columns(4)
                         
                         with alt_col1:
                             st.metric("İY/MS", f"1/{tahmin['sonuc']}")
@@ -502,14 +562,14 @@ def main_app():
                         
                         with alt_col3:
                             st.metric("Toplam Gol", tahmin['ust'])
+                        
+                        with alt_col4:
+                            handikap = "H1 (-1)" if tahmin['ev_guc'] > tahmin['dep_guc'] + 10 else "HX" if abs(tahmin['ev_guc'] - tahmin['dep_guc']) < 5 else "H2 (-1)"
+                            st.metric("Handikap", handikap)
             else:
-                st.warning("⚠️ Seçili tarihte maç bulunamadı!")
+                st.warning("⚠️ Seçili tarih aralığında maç bulunamadı!")
         else:
             st.info("💡 Önce 'Maçları Getir' butonuna tıklayın.")
-    
-    # Footer
-    st.markdown("---")
-    st.caption("Geliştirici: Murat Mustafa Ciritçi | https://www.muratciritci.com.tr | v1.4.0-Tahmin-2025-2026")
 
 # ==================== YARDIMCI FONKSİYONLAR ====================
 import time
