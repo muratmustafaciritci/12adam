@@ -10,9 +10,9 @@ class APIFootballClient:
             "x-apisports-key": api_key
         }
     
-def get_matches(self, league_id, season=2024, date_from=None, date_to=None):
-    """Lig maçlarını getir - Ücretsiz plan için 2024 sezonu"""
-    endpoint = f"{self.base_url}/fixtures"
+        def get_matches(self, league_id, season=2024, date_from=None, date_to=None):
+        """Lig maçlarını getir - Ücretsiz plan için 2024 sezonu"""
+        endpoint = f"{self.base_url}/fixtures"
         
         params = {
             "league": league_id,
