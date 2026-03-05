@@ -86,9 +86,9 @@ def login_page():
         st.info("💡 Yeni şifrenizle giriş yapın")
 
 # ==================== ANA UYGULAMA ====================
-def main_app():
+    def main_app():
     # Sidebar
-with st.sidebar:
+    with st.sidebar:
     st.markdown("## ⚙️ Ayarlar")
     
     # Çalışma Modu
