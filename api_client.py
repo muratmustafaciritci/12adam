@@ -56,7 +56,7 @@ class APIFootballClient:
 
 # Lig ID'leri
 LEAGUE_IDS = {
-    "Süper Lig 2026-2027": 203,
-    "1. Lig 2026-2027": 204,
-    "2. Lig 2026-2027": 205
+    "Süper Lig 2023-2024": 203,
+    "1. Lig 2023-2024": 204,
+    "2. Lig 2023-2024": 205
 }
