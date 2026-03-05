@@ -125,8 +125,8 @@ def main_app():
     
     # ... geri kalan sidebar kodları aynı ...
         
-        # ML Model Ayarları
-        st.markdown("### 🤖 ML Model")
+        # ML Model Ayarları              # ← 8 boşluk
+        st.markdown("### 🤖 ML Model")   # ← 8 boşluk
         model = st.multiselect(
             "Kullanılacak Modeller",
             ["Random Forest", "Poisson", "Ensemble (Hepsi)"],
