@@ -9,6 +9,13 @@ from datetime import datetime, timedelta
 
 sys.path.append('.')
 
+# API Client - BUNLARI EKLE
+from api_client import APIFootballClient, LEAGUE_IDS
+
+# API Client oluştur
+api_key = os.getenv("API_FOOTBALL_KEY", "e9394f65e9da5b06527a4987ad240d7b")
+api_client = APIFootballClient(api_key)
+
 # Sayfa yapılandırması
 st.set_page_config(
     page_title="12 Adam - Futbol Tahmin Sistemi",
