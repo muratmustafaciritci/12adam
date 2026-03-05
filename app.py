@@ -101,7 +101,7 @@ def main_app():
         # Lig Seçimi
         lig = st.selectbox(
             "Lig Seçin",
-            ["Süper Lig 2025-2026", "1. Lig 2025-2026", "2. Lig 2025-2026"]
+            ["Süper Lig 2026-2027", "1. Lig 2026-2027", "2. Lig 2026-2027"]
         )
         
         # Favori Takım
