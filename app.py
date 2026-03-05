@@ -108,7 +108,7 @@ def main_app():
         # Lig Seçimi
         lig = st.selectbox(
             "Lig Seçin",
-            ["Süper Lig 2026-2027", "1. Lig 2026-2027", "2. Lig 2026-2027"]
+            ["Süper Lig 2023-2024", "1. Lig 2023-2024", "2. Lig 2023-2024"]
         )
         
         # Favori Takım
@@ -116,9 +116,9 @@ def main_app():
         st.markdown("### ⭐ Favori Takım")
         
         favori_takimlar = {
-            "Süper Lig 2025-2026": ["Tümü", "Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
-            "1. Lig 2025-2026": ["Tümü", "Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
-            "2. Lig 2025-2026": ["Tümü", "Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
+            "Süper Lig 2023-2024": ["Tümü", "Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
+            "1. Lig 2023-2024": ["Tümü", "Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
+            "2. Lig 2023-2024": ["Tümü", "Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
         }
         
         favori = st.selectbox(
@@ -321,18 +321,18 @@ def main_app():
 import time
 
 def generate_mock_matches(lig):
-    """Mock maç verisi üret - Mart 2026 sonrası"""
+    """Mock maç verisi üret - Mart 2023 sonrası"""
     takimlar = {
-        "Süper Lig 2025-2026": ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
-        "1. Lig 2025-2026": ["Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
-        "2. Lig 2025-2026": ["Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
+        "Süper Lig 2023-2024": ["Galatasaray", "Fenerbahçe", "Beşiktaş", "Trabzonspor", "Başakşehir", "Konyaspor"],
+        "1. Lig 2023-2024": ["Sakaryaspor", "Kocaelispor", "Eyüpspor", "Bodrumspor", "Manisa FK", "Bandırmaspor"],
+        "2. Lig 2023-2024": ["Ankara Demirspor", "Zonguldak Kömürspor", "Nazilli Belediyespor", "Etimesgut Belediyespor"]
     }
     
-    secili_takimlar = takimlar.get(lig, takimlar["Süper Lig 2025-2026"])
+    secili_takimlar = takimlar.get(lig, takimlar["Süper Lig 2023-2024"])
     maclar = []
     
     for i in range(0, len(secili_takimlar)-1, 2):
-        # Mart 2026'dan Aralık 2026'ya kadar
+        # Mart 2023'dan Aralık 2024'ya kadar
         ay = random.randint(3, 12)  # Mart=3, Aralık=12
         gun = random.randint(1, 28)
         saat = random.randint(13, 21)
@@ -340,7 +340,7 @@ def generate_mock_matches(lig):
         maclar.append({
             "Ev Sahibi": secili_takimlar[i],
             "Deplasman": secili_takimlar[i+1],
-            "Tarih": f"{gun:02d}.{ay:02d}.2026",
+            "Tarih": f"{gun:02d}.{ay:02d}.2023",
             "Saat": f"{saat}:00",
             "Lig": lig
         })
