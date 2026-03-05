@@ -28,8 +28,8 @@ class FootballDataClient:
         result = []
         for match in matches:
             result.append({
-                "Ev Sahibi": match["homeTeam"]["name"],
-                "Deplasman": match["awayTeam"]["name"],
+                "Ev Sahibi": match["homeTeam"]["shortName"] or match["homeTeam"]["name"],
+                "Deplasman": match["awayTeam"]["shortName"] or match["awayTeam"]["name"],
                 "Tarih": datetime.strptime(match["utcDate"], "%Y-%m-%dT%H:%M:%SZ").strftime("%d.%m.%Y"),
                 "Saat": datetime.strptime(match["utcDate"], "%Y-%m-%dT%H:%M:%SZ").strftime("%H:%M"),
                 "Lig": match["competition"]["name"],
