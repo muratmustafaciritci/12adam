@@ -86,17 +86,17 @@ def login_page():
         st.info("💡 Yeni şifrenizle giriş yapın")
 
 # ==================== ANA UYGULAMA ====================
-    def main_app():
+def main_app():
     # Sidebar
-    with st.sidebar:
-    st.markdown("## ⚙️ Ayarlar")
-    
-    # Çalışma Modu
-    mod = st.selectbox(
-        "Çalışma Modu",
-        ["Otomatik (API → Mock)", "API Modu (Gerçek Veri)", "Mock Modu (Simülasyon)"],
-        help="API için anahtar gerekli. Otomatik modda API çalışmazsa Mock'a geçer."
-    )
+    with st.sidebar:                    # ← 4 boşluk
+        st.markdown("## ⚙️ Ayarlar")     # ← 8 boşluk (4+4)
+        
+        # Çalışma Modu
+        mod = st.selectbox(              # ← 8 boşluk
+            "Çalışma Modu",              # ← 12 boşluk
+            ["Otomatik (API → Mock)", "API Modu (Gerçek Veri)", "Mock Modu (Simülasyon)"],
+            help="API için anahtar gerekli. Otomatik modda API çalışmazsa Mock'a geçer."
+        )
     
     # Lig Seçimi
     lig = st.selectbox(
