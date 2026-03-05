@@ -5,7 +5,8 @@ import json
 import random
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
+import time
 
 sys.path.append('.')
 
@@ -41,33 +42,13 @@ st.markdown("""
         margin: 10px 0;
         border-left: 4px solid #1f77b4;
     }
-    .hatirlatici-box {
-        background-color: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 10px;
-        padding: 10px;
-        margin: 5px 0;
-    }
-    .critical-box {
-        background-color: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-radius: 10px;
-        padding: 10px;
-        margin: 5px 0;
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.7; }
-        100% { opacity: 1; }
-    }
     .stButton>button {
         width: 100%;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Session state başlat
+# ==================== SESSION STATE INIT ====================
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 if 'admin_user' not in st.session_state:
@@ -82,10 +63,12 @@ if 'filtreli_maclar' not in st.session_state:
     st.session_state.filtreli_maclar = []
 if 'hatirlatmalar' not in st.session_state:
     st.session_state.hatirlatmalar = []
-if 'tarih_araligi' not in st.session_state:
-    st.session_state.tarih_araligi = {"baslangic": None, "bitis": None}
-if 'hizli_secim' not in st.session_state:
-    st.session_state.hizli_secim = None
+if 'baslangic_tarihi' not in st.session_state:
+    st.session_state.baslangic_tarihi = date(2026, 3, 5)
+if 'bitis_tarihi' not in st.session_state:
+    st.session_state.bitis_tarihi = date(2026, 3, 5)
+if 'aktif_tab' not in st.session_state:
+    st.session_state.aktif_tab = 0
 
 # ==================== GİRİŞ SAYFASI ====================
 def login_page():
@@ -140,26 +123,16 @@ def get_durum_emoji(durum):
     return durum_emoji.get(durum, "⚪")
 
 def tarih_filtrele(maclar, baslangic, bitis):
-    """Tarih aralığına göre filtrele"""
+    """Tarih aralığına göre filtrele - date objesi kabul eder"""
     filtreli = []
     for mac in maclar:
         try:
-            mac_tarih = datetime.strptime(mac['Tarih'], "%d.%m.%Y")
+            mac_tarih = datetime.strptime(mac['Tarih'], "%d.%m.%Y").date()
             if baslangic <= mac_tarih <= bitis:
                 filtreli.append(mac)
         except:
             continue
     return filtreli
-
-def generate_team_stats(takim):
-    return {
-        "gol": round(random.uniform(1.2, 2.5), 2),
-        "sut": random.randint(8, 18),
-        "korner": random.randint(3, 8),
-        "kart": random.randint(1, 4),
-        "possession": random.randint(45, 65),
-        "form": random.choice(["WWDLW", "WWDLL", "LLWWD", "DWDWD"])
-    }
 
 def real_prediction(ev_sahibi, deplasman):
     takim_gucleri = {
@@ -322,34 +295,6 @@ def sidebar():
         kelly = st.slider("Kelly Katsayısı", 0.1, 1.0, 0.5, key="sidebar_kelly")
         max_bet = st.slider("Max Bahis %", 1, 10, 5, key="sidebar_maxbet")
         
-        # Hatırlatıcılar
-        st.markdown("---")
-        st.markdown("### 🔔 Hatırlatmalar")
-        
-        if st.session_state.hatirlatmalar:
-            for i, hat in enumerate(st.session_state.hatirlatmalar[:3]):
-                st.caption(f"🔔 {hat['mac']} - {hat['tarih'].strftime('%d.%m')}")
-        
-        if st.button("➕ Hatırlatma Ekle"):
-            st.session_state.show_hatirlatma_ekle = True
-        
-        if st.session_state.get('show_hatirlatma_ekle', False):
-            with st.form("hatirlatma_form"):
-                h_mac = st.text_input("Maç")
-                h_tarih = st.date_input("Tarih", datetime.now())
-                h_saat = st.time_input("Saat", datetime.strptime("20:00", "%H:%M").time())
-                h_not = st.text_area("Not")
-                
-                if st.form_submit_button("Kaydet"):
-                    st.session_state.hatirlatmalar.append({
-                        'mac': h_mac,
-                        'tarih': h_tarih,
-                        'saat': h_saat,
-                        'not': h_not
-                    })
-                    st.session_state.show_hatirlatma_ekle = False
-                    st.rerun()
-        
         st.markdown("---")
         
         if st.button("🚪 Çıkış Yap", use_container_width=True):
@@ -362,73 +307,64 @@ def sidebar():
 def tab_maclar(lig):
     st.subheader("📋 Günün Maçları")
     
-    # Tarih aralığı seçimi
+    # Tarih seçimi - date objesi olarak
     col1, col2 = st.columns(2)
-    
-    # Varsayılan değerleri session'dan al veya bugünü kullan
-    default_baslangic = st.session_state.tarih_araligi.get('baslangic', datetime(2026, 3, 5))
-    default_bitis = st.session_state.tarih_araligi.get('bitis', datetime(2026, 3, 5))
     
     with col1:
         st.markdown("**Başlangıç Tarihi**")
-        b_tarih = st.date_input("Başlangıç", default_baslangic, key="tab1_baslangic", label_visibility="collapsed")
+        b_tarih = st.date_input(
+            "Başlangıç", 
+            value=st.session_state.baslangic_tarihi,
+            key="tab1_baslangic",
+            label_visibility="collapsed"
+        )
     
     with col2:
         st.markdown("**Bitiş Tarihi**")
-        bt_tarih = st.date_input("Bitiş", default_bitis, key="tab1_bitis", label_visibility="collapsed")
+        bt_tarih = st.date_input(
+            "Bitiş", 
+            value=st.session_state.bitis_tarihi,
+            key="tab1_bitis",
+            label_visibility="collapsed"
+        )
     
-    # Hızlı seçimler - DÜZELTİLMİŞ
+    # Hızlı seçimler
     st.markdown("**⚡ Hızlı Tarih Seçimi**")
     hizli_col1, hizli_col2, hizli_col3, hizli_col4 = st.columns(4)
     
     with hizli_col1:
         if st.button("📍 Bugün", key="btn_bugun"):
-            st.session_state.tarih_araligi = {
-                'baslangic': datetime(2026, 3, 5),
-                'bitis': datetime(2026, 3, 5)
-            }
-            st.session_state.hizli_secim = "bugun"
+            st.session_state.baslangic_tarihi = date(2026, 3, 5)
+            st.session_state.bitis_tarihi = date(2026, 3, 5)
             st.rerun()
     
     with hizli_col2:
         if st.button("📍 Yarın", key="btn_yarin"):
-            st.session_state.tarih_araligi = {
-                'baslangic': datetime(2026, 3, 6),
-                'bitis': datetime(2026, 3, 6)
-            }
-            st.session_state.hizli_secim = "yarin"
+            st.session_state.baslangic_tarihi = date(2026, 3, 6)
+            st.session_state.bitis_tarihi = date(2026, 3, 6)
             st.rerun()
     
     with hizli_col3:
         if st.button("📍 Bu Hafta", key="btn_hafta"):
-            st.session_state.tarih_araligi = {
-                'baslangic': datetime(2026, 3, 5),
-                'bitis': datetime(2026, 3, 11)
-            }
-            st.session_state.hizli_secim = "hafta"
+            st.session_state.baslangic_tarihi = date(2026, 3, 5)
+            st.session_state.bitis_tarihi = date(2026, 3, 11)
             st.rerun()
     
     with hizli_col4:
         if st.button("📍 Bu Ay", key="btn_ay"):
-            st.session_state.tarih_araligi = {
-                'baslangic': datetime(2026, 3, 1),
-                'bitis': datetime(2026, 3, 31)
-            }
-            st.session_state.hizli_secim = "ay"
+            st.session_state.baslangic_tarihi = date(2026, 3, 1)
+            st.session_state.bitis_tarihi = date(2026, 3, 31)
             st.rerun()
     
-    # Tarihleri güncelle
-    st.session_state.tarih_araligi = {
-        'baslangic': datetime.combine(b_tarih, datetime.min.time()),
-        'bitis': datetime.combine(bt_tarih, datetime.min.time())
-    }
+    # Tarihleri session'a kaydet
+    st.session_state.baslangic_tarihi = b_tarih
+    st.session_state.bitis_tarihi = bt_tarih
     
-    # Maçları getir butonu
+    # Maçları getir
     if st.button("🔍 Maçları Getir", type="primary", use_container_width=True):
         with st.spinner("Maçlar yükleniyor..."):
             progress_bar = st.progress(0)
             
-            # API'den maçları çek
             competition_code = COMPETITIONS.get(lig, "PL")
             maclar = football_client.get_matches(competition_code, season=2025)
             
@@ -440,10 +376,8 @@ def tab_maclar(lig):
                 st.error("❌ API'den veri alınamadı!")
                 return
             
-            # Tarih filtrele
-            baslangic = st.session_state.tarih_araligi['baslangic']
-            bitis = st.session_state.tarih_araligi['bitis']
-            filtreli = tarih_filtrele(maclar, baslangic, bitis)
+            # Tarih filtrele - date objeleri kullan
+            filtreli = tarih_filtrele(maclar, b_tarih, bt_tarih)
             
             # Favori takım filtresi
             if st.session_state.favori != "Tümü":
@@ -452,7 +386,7 @@ def tab_maclar(lig):
             st.session_state.maclar = maclar
             st.session_state.filtreli_maclar = filtreli
             
-            st.success(f"✅ {len(filtreli)} maç bulundu ({baslangic.strftime('%d.%m.%Y')} - {bitis.strftime('%d.%m.%Y')})")
+            st.success(f"✅ {len(filtreli)} maç bulundu ({b_tarih.strftime('%d.%m.%Y')} - {bt_tarih.strftime('%d.%m.%Y')})")
     
     # Maçları göster
     if st.session_state.filtreli_maclar:
@@ -471,7 +405,7 @@ def tab_maclar(lig):
         df = pd.DataFrame(df_data)
         st.dataframe(df, use_container_width=True, hide_index=True)
         
-        # Özet istatistik
+        # Özet
         durumlar = [m.get('Durum', '') for m in st.session_state.filtreli_maclar]
         col1, col2, col3, col4 = st.columns(4)
         with col1:
@@ -483,21 +417,16 @@ def tab_maclar(lig):
         with col4:
             st.metric("🟡 Ertelendi", durumlar.count("POSTPONED"))
         
-        # ===== HIZLI TAHMİN - DÜZELTİLMİŞ =====
+        # Hızlı Tahmin
         st.markdown("---")
         st.markdown("### 🎯 Hızlı Tahmin")
         
         mac_options = ["Maç seçin..."] + [f"{m['Ev Sahibi']} vs {m['Deplasman']} | {m['Tarih']} {m['Saat']}" 
                                          for m in st.session_state.filtreli_maclar]
         
-        secili = st.selectbox(
-            "Tahmin yapmak istediğiniz maçı seçin",
-            mac_options,
-            key="hizli_tahmin_select"
-        )
+        secili = st.selectbox("Tahmin yapmak istediğiniz maçı seçin", mac_options, key="hizli_tahmin_select")
         
         if secili != "Maç seçin...":
-            # Maçı bul
             secili_mac = None
             for m in st.session_state.filtreli_maclar:
                 if f"{m['Ev Sahibi']} vs {m['Deplasman']}" in secili:
@@ -509,7 +438,7 @@ def tab_maclar(lig):
                 with col1:
                     if st.button("🚀 Tahmin Yap", type="primary", key="btn_hizli_tahmin"):
                         st.session_state.secili_mac = secili_mac
-                        st.session_state.aktif_tab = 2  # Tab3'e geç
+                        st.session_state.aktif_tab = 2
                         st.rerun()
                 
                 with col2:
@@ -524,13 +453,11 @@ def tab_analiz():
         st.info("💡 Önce 'Maçları Getir' butonuna tıklayın.")
         return
     
-    # Maç seçimi
     mac_options = [f"{m['Ev Sahibi']} vs {m['Deplasman']} ({m['Tarih']})" 
                    for m in st.session_state.filtreli_maclar]
     
     secili = st.selectbox("Maç Seçin", mac_options, key="analiz_mac_select")
     
-    # Maçı bul
     secili_mac = None
     for m in st.session_state.filtreli_maclar:
         if f"{m['Ev Sahibi']} vs {m['Deplasman']}" in secili:
@@ -540,7 +467,6 @@ def tab_analiz():
     if not secili_mac:
         return
     
-    # Detayları göster
     detaylar = get_mac_detaylari(secili_mac)
     
     # Hava ve Stadyum
@@ -611,7 +537,12 @@ def tab_analiz():
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("### 🏠 Ev Sahibi İstatistikleri")
-        stats = generate_team_stats(secili_mac['Ev Sahibi'])
+        stats = {
+            "gol": round(random.uniform(1.2, 2.5), 2),
+            "sut": random.randint(8, 18),
+            "korner": random.randint(3, 8),
+            "kart": random.randint(1, 4)
+        }
         fig_data = pd.DataFrame({
             'Metrik': ['Gol Ort.', 'Şut', 'Korner', 'Kart'],
             'Değer': [stats['gol'], stats['sut'], stats['korner'], stats['kart']]
@@ -620,18 +551,23 @@ def tab_analiz():
     
     with col2:
         st.markdown("### 🏃 Deplasman İstatistikleri")
-        stats = generate_team_stats(secili_mac['Deplasman'])
+        stats = {
+            "gol": round(random.uniform(1.2, 2.5), 2),
+            "sut": random.randint(8, 18),
+            "korner": random.randint(3, 8),
+            "kart": random.randint(1, 4)
+        }
         fig_data = pd.DataFrame({
             'Metrik': ['Gol Ort.', 'Şut', 'Korner', 'Kart'],
             'Değer': [stats['gol'], stats['sut'], stats['korner'], stats['kart']]
         })
         st.bar_chart(fig_data.set_index('Metrik'))
     
-    # Tahmin yap butonu - DÜZELTİLMİŞ
+    # Tahmin yap butonu
     st.markdown("---")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🎯 Bu Maç İçin Tahmin Yap", type="primary", use_container_width=True, key="btn_analiz_tahmin"):
+        if st.button("🎯 Bu Maç İçin Tahmin Yap", type="primary", use_container_width=True):
             st.session_state.secili_mac = secili_mac
             st.session_state.aktif_tab = 2
             st.rerun()
@@ -640,21 +576,19 @@ def tab_analiz():
 def tab_tahmin(kelly, max_bet, sim_count):
     st.subheader("🎯 Tahmin Sonuçları")
     
-    # Tarih seçimi ve maç listesi
     if not st.session_state.maclar:
         st.info("💡 Önce Tab1'den 'Maçları Getir' butonuna tıklayın.")
         return
     
+    # Tarih seçimi
     col1, col2 = st.columns(2)
     with col1:
-        b_tarih = st.date_input("Başlangıç Tarihi", datetime(2026, 3, 5), key="tab3_baslangic")
+        b_tarih = st.date_input("Başlangıç Tarihi", date(2026, 3, 5), key="tab3_baslangic")
     with col2:
-        bt_tarih = st.date_input("Bitiş Tarihi", datetime(2026, 3, 31), key="tab3_bitis")
+        bt_tarih = st.date_input("Bitiş Tarihi", date(2026, 3, 31), key="tab3_bitis")
     
     # Tarihe göre filtrele
-    baslangic = datetime.combine(b_tarih, datetime.min.time())
-    bitis = datetime.combine(bt_tarih, datetime.min.time())
-    filtreli = tarih_filtrele(st.session_state.maclar, baslangic, bitis)
+    filtreli = tarih_filtrele(st.session_state.maclar, b_tarih, bt_tarih)
     
     if st.session_state.favori != "Tümü":
         filtreli = [m for m in filtreli if st.session_state.favori in [m['Ev Sahibi'], m['Deplasman']]]
@@ -669,7 +603,6 @@ def tab_tahmin(kelly, max_bet, sim_count):
     mac_options = [f"{m['Ev Sahibi']} vs {m['Deplasman']} | {m['Tarih']} {m['Saat']}" for m in filtreli]
     secili = st.selectbox("Tahmin yapmak istediğiniz maçı seçin", mac_options, key="tab3_mac_select")
     
-    # Maçı bul
     secili_mac = None
     for m in filtreli:
         if f"{m['Ev Sahibi']} vs {m['Deplasman']}" in secili:
@@ -685,12 +618,11 @@ def tab_tahmin(kelly, max_bet, sim_count):
     <div class="match-card">
         <h3>{durum_emoji} {secili_mac['Ev Sahibi']} vs {secili_mac['Deplasman']}</h3>
         <p>📅 {secili_mac['Tarih']} | 🕐 {secili_mac['Saat']} | 🏆 {secili_mac['Lig']}</p>
-        <p>Durum: {secili_mac.get('Durum', 'Bilinmiyor')}</p>
     </div>
     """, unsafe_allow_html=True)
     
-    # Tahmin butonu ve sonuçları
-    if st.button("🚀 Tahmini Hesapla", type="primary", use_container_width=True, key="btn_tahmin_hesapla"):
+    # Tahmin butonu
+    if st.button("🚀 Tahmini Hesapla", type="primary", use_container_width=True):
         with st.spinner("ML modelleri analiz ediyor..."):
             progress_bar = st.progress(0)
             for i in range(100):
@@ -699,7 +631,7 @@ def tab_tahmin(kelly, max_bet, sim_count):
             
             tahmin = real_prediction(secili_mac['Ev Sahibi'], secili_mac['Deplasman'])
             
-            # Sonuçları göster
+            # Sonuçlar
             st.markdown("---")
             st.markdown("### 📊 Tahmin Sonuçları")
             
@@ -714,7 +646,7 @@ def tab_tahmin(kelly, max_bet, sim_count):
             with col4:
                 st.metric("Gol Tahmini", tahmin['ust'])
             
-            # Detaylı analiz
+            # Detaylar
             st.markdown("---")
             st.markdown("### 🔍 Detaylı Analiz")
             
@@ -734,7 +666,7 @@ def tab_tahmin(kelly, max_bet, sim_count):
                 st.caption(f"KG: {tahmin['kg']}")
                 st.caption(f"Toplam: {tahmin['ust']}")
             
-            # Bahis önerisi
+            # Bahis
             st.markdown("---")
             st.markdown("### 💰 Bahis Önerisi")
             
