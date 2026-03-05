@@ -195,6 +195,33 @@ def tarih_filtrele(maclar, baslangic, bitis):
             filtreli.append(mac)
     return filtreli
 
+# ==================== DURUM RENKLERİ ====================
+def get_durum_renk(durum):
+    """Durum renklerini döndür"""
+    durum_renk = {
+        "FINISHED": "🔴 Bitti",
+        "TIMED": "🟢 Planlandı",
+        "LIVE": "⚡ Canlı",
+        "IN_PLAY": "⚡ Devam Ediyor",
+        "POSTPONED": "🟡 Ertelendi",
+        "SUSPENDED": "⏸️ Durduruldu",
+        "CANCELLED": "❌ İptal"
+    }
+    return durum_renk.get(durum, f"⚪ {durum}")
+
+def get_durum_emoji(durum):
+    """Durum emojisini döndür"""
+    durum_emoji = {
+        "FINISHED": "🔴",
+        "TIMED": "🟢",
+        "LIVE": "⚡",
+        "IN_PLAY": "⚡",
+        "POSTPONED": "🟡",
+        "SUSPENDED": "⏸️",
+        "CANCELLED": "❌"
+    }
+    return durum_emoji.get(durum, "⚪")
+
 # ==================== ANA UYGULAMA ====================
 def main_app():
     # Sidebar
@@ -279,7 +306,46 @@ def main_app():
     tab1, tab2, tab3 = st.tabs(["📋 Maçlar", "📊 Analiz & Grafikler", "🎯 Tahmin Sonuçları"])
     
     with tab1:
-        st.subheader("Günün Maçları")
+        st.subheader("📋 Günün Maçları - Detaylı Arama")
+        
+        # Detaylı arama seçenekleri
+        with st.expander("🔍 Detaylı Arama Ayarları", expanded=False):
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown("**Başlangıç Tarihi**")
+                b_gun = st.number_input("Gün", min_value=1, max_value=31, value=5, key="t1_b_gun")
+                b_ay = st.number_input("Ay", min_value=1, max_value=12, value=3, key="t1_b_ay")
+                b_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="t1_b_yil")
+            
+            with col2:
+                st.markdown("**Bitiş Tarihi**")
+                bt_gun = st.number_input("Gün", min_value=1, max_value=31, value=31, key="t1_bt_gun")
+                bt_ay = st.number_input("Ay", min_value=1, max_value=12, value=5, key="t1_bt_ay")
+                bt_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="t1_bt_yil")
+            
+            # Hızlı seçimler
+            hizli_col1, hizli_col2, hizli_col3, hizli_col4 = st.columns(4)
+            
+            with hizli_col1:
+                if st.button("📍 Bugün", key="t1_bugun"):
+                    b_gun, b_ay, b_yil = 5, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 5, 3, 2026
+            
+            with hizli_col2:
+                if st.button("📍 Yarın", key="t1_yarin"):
+                    b_gun, b_ay, b_yil = 6, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 6, 3, 2026
+            
+            with hizli_col3:
+                if st.button("📍 Bu Hafta", key="t1_hafta"):
+                    b_gun, b_ay, b_yil = 5, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 11, 3, 2026
+            
+            with hizli_col4:
+                if st.button("📍 Bu Ay", key="t1_ay"):
+                    b_gun, b_ay, b_yil = 1, 3, 2026
+                    bt_gun, bt_ay, bt_yil = 31, 3, 2026
         
         if st.button("🔍 Maçları Getir", type="primary"):
             with st.spinner("Maçlar yükleniyor..."):
@@ -292,6 +358,17 @@ def main_app():
                 # API boşsa uyarı
                 if not maclar:
                     st.warning("API'den veri alınamadı. Limit dolmuş olabilir veya API hatası.")
+                
+                # Tarih aralığı filtrele
+                try:
+                    baslangic_tarihi = datetime(b_yil, b_ay, b_gun)
+                    bitis_tarihi = datetime(bt_yil, bt_ay, bt_gun)
+                    
+                    if baslangic_tarihi <= bitis_tarihi:
+                        maclar = tarih_filtrele(maclar, baslangic_tarihi, bitis_tarihi)
+                        st.success(f"📅 {baslangic_tarihi.strftime('%d.%m.%Y')} - {bitis_tarihi.strftime('%d.%m.%Y')} arası maçlar")
+                except:
+                    pass
                 
                 # Favori takım filtresi
                 if st.session_state.favori != "Tümü" and maclar:
@@ -306,10 +383,46 @@ def main_app():
                     time.sleep(0.01)
                     progress_bar.progress(i + 1)
                 
-                # Göster
+                # Göster - Durum renkleri ile
                 if maclar:
-                    df = pd.DataFrame(maclar)
+                    # DataFrame oluştur
+                    df_data = []
+                    for mac in maclar:
+                        durum = mac.get('Durum', 'Bilinmiyor')
+                        durum_goster = get_durum_renk(durum)
+                        
+                        df_data.append({
+                            "Durum": durum_goster,
+                            "Ev Sahibi": mac['Ev Sahibi'],
+                            "Deplasman": mac['Deplasman'],
+                            "Tarih": mac['Tarih'],
+                            "Saat": mac['Saat'],
+                            "Lig": mac['Lig']
+                        })
+                    
+                    df = pd.DataFrame(df_data)
                     st.dataframe(df, use_container_width=True, hide_index=True)
+                    
+                    # Özet istatistik
+                    st.markdown("---")
+                    st.markdown("### 📊 Maç Durumları Özeti")
+                    
+                    durumlar = [m.get('Durum', 'Bilinmiyor') for m in maclar]
+                    finished = durumlar.count("FINISHED")
+                    timed = durumlar.count("TIMED")
+                    live = durumlar.count("LIVE") + durumlar.count("IN_PLAY")
+                    postponed = durumlar.count("POSTPONED")
+                    
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("🔴 Bitti", finished)
+                    with col2:
+                        st.metric("🟢 Planlandı", timed)
+                    with col3:
+                        st.metric("⚡ Canlı", live)
+                    with col4:
+                        st.metric("🟡 Ertelendi", postponed)
+                    
                     st.session_state.maclar = maclar
                 else:
                     st.error("❌ Maç bulunamadı! API limiti dolmuş olabilir.")
@@ -378,37 +491,37 @@ def main_app():
             
             with col1:
                 st.markdown("**Başlangıç Tarihi**")
-                b_gun = st.number_input("Gün", min_value=1, max_value=31, value=5, key="b_gun")
-                b_ay = st.number_input("Ay", min_value=1, max_value=12, value=3, key="b_ay")
-                b_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="b_yil")
+                b_gun = st.number_input("Gün", min_value=1, max_value=31, value=5, key="t3_b_gun")
+                b_ay = st.number_input("Ay", min_value=1, max_value=12, value=3, key="t3_b_ay")
+                b_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="t3_b_yil")
             
             with col2:
                 st.markdown("**Bitiş Tarihi**")
-                bt_gun = st.number_input("Gün", min_value=1, max_value=31, value=31, key="bt_gun")
-                bt_ay = st.number_input("Ay", min_value=1, max_value=12, value=5, key="bt_ay")
-                bt_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="bt_yil")
+                bt_gun = st.number_input("Gün", min_value=1, max_value=31, value=31, key="t3_bt_gun")
+                bt_ay = st.number_input("Ay", min_value=1, max_value=12, value=5, key="t3_bt_ay")
+                bt_yil = st.number_input("Yıl", min_value=2025, max_value=2027, value=2026, key="t3_bt_yil")
             
             # Hızlı seçimler
             st.markdown("**⚡ Hızlı Seçimler**")
             hizli_col1, hizli_col2, hizli_col3, hizli_col4 = st.columns(4)
             
             with hizli_col1:
-                if st.button("📍 Bugün"):
+                if st.button("📍 Bugün", key="t3_bugun"):
                     b_gun, b_ay, b_yil = 5, 3, 2026
                     bt_gun, bt_ay, bt_yil = 5, 3, 2026
             
             with hizli_col2:
-                if st.button("📍 Yarın"):
+                if st.button("📍 Yarın", key="t3_yarin"):
                     b_gun, b_ay, b_yil = 6, 3, 2026
                     bt_gun, bt_ay, bt_yil = 6, 3, 2026
             
             with hizli_col3:
-                if st.button("📍 Bu Hafta"):
+                if st.button("📍 Bu Hafta", key="t3_hafta"):
                     b_gun, b_ay, b_yil = 5, 3, 2026
                     bt_gun, bt_ay, bt_yil = 11, 3, 2026
             
             with hizli_col4:
-                if st.button("📍 Bu Ay"):
+                if st.button("📍 Bu Ay", key="t3_ay"):
                     b_gun, b_ay, b_yil = 1, 3, 2026
                     bt_gun, bt_ay, bt_yil = 31, 3, 2026
             
@@ -453,13 +566,17 @@ def main_app():
                 secili_mac = filtreli_maclar[secili_mac_index]
                 st.session_state.secili_mac = secili_mac
                 
+                # Durum rengi
+                durum = secili_mac.get('Durum', 'Bilinmiyor')
+                durum_emoji = get_durum_emoji(durum)
+                
                 # Seçili maç kartı
                 st.markdown("---")
                 st.markdown(f"""
                 <div class="match-card">
                     <h3>⚽ {secili_mac['Ev Sahibi']} vs {secili_mac['Deplasman']}</h3>
                     <p>📅 {secili_mac['Tarih']} | 🕐 {secili_mac['Saat']} | 🏆 {secili_mac['Lig']}</p>
-                    <p>📊 Durum: {secili_mac.get('Durum', 'Bilinmiyor')}</p>
+                    <p>{durum_emoji} Durum: {durum}</p>
                 </div>
                 """, unsafe_allow_html=True)
                 
